@@ -11,12 +11,17 @@ import { fetchCoffeeStores } from "../../lib/coffee_stores";
 export async function getStaticProps(staticProps) {
   const params = staticProps.params;
   const coffeeStores = await fetchCoffeeStores();
+  console.log("coffee", coffeeStores);
+
+  const findCoffeeStoresByID = coffeeStores.find((coffeeStore) => {
+    return coffeeStore.fsq_id.toString() === params.id;
+  });
 
   return {
     props: {
-      coffeeStore: coffeeStores.find((coffeeStore) => {
-        return coffeeStore.fsq_id.toString() === params.id; //dynamic id
-      }),
+      coffeeStore: findCoffeeStoresByID
+        ? findCoffeeStoresByID
+        : { location: "", name: "", imgUrl: "" },
     },
   };
 }
@@ -41,7 +46,7 @@ const CoffeeStore = (props) => {
   if (router.isFallback) {
     return <div>Loading...</div>;
   }
-  const { location, name, neighborhood, imgUrl } = props.coffeeStore; //* It needs to be after the loading state to get the data and then destructure it!
+  const { location, name, imgUrl } = props.coffeeStore; //* It needs to be after the loading state to get the data and then destructure it!
 
   const handleUpVoteButton = () => {
     console.log("up vote dizz nuts");
@@ -56,7 +61,7 @@ const CoffeeStore = (props) => {
         <div className={styles.col1}>
           <div className={styles.backToHomeLink}>
             <Link href="/">
-              <a>Back to home</a>
+              <a>← Back to home</a>
             </Link>
           </div>
           <div className={styles.nameWrapper}>

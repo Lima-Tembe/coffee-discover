@@ -1,9 +1,12 @@
 import Head from "next/head";
 import Image from "next/image";
+import { useContext, useEffect, useState } from "react";
 import Banner from "../components/banner";
 import Card from "../components/card";
+import useTrackLocation from "../hooks/use-track-location";
 import { fetchCoffeeStores } from "../lib/coffee_stores";
 import styles from "../styles/Home.module.css";
+import { ACTION_TYPES, StoreContext } from "../store/store-context";
 
 // import coffeeStoresData from "../data/coffee-stores.json";
 
@@ -18,10 +21,40 @@ export async function getStaticProps(context) {
 }
 
 export default function Home(props) {
+  // const [coffeeStores, setCoffeeStores] = useState("");
+  const [coffeeStoresError, setCoffeeStoresError] = useState(null);
+  const { dispatch, state } = useContext(StoreContext);
+  const { coffeeStores, latLong } = state;
+
   console.log("props", props.coffeeStores);
+
+  const { handleTrackLocation, locationErrorMsg, isFindingLocation } =
+    useTrackLocation();
+
+  console.log({ latLong, locationErrorMsg });
+
+  useEffect(async () => {
+    try {
+      if (latLong) {
+        const fetchedCoffeeStores = await fetchCoffeeStores(latLong, 30);
+        // setCoffeeStores(fetchedCoffeeStores);
+        dispatch({
+          type: ACTION_TYPES.SET_COFFEE_STORES,
+          payload: { coffeeStores: fetchedCoffeeStores },
+        });
+        console.log({ fetchedCoffeeStores });
+        //set coffee stores
+      }
+    } catch (error) {
+      console.log({ error });
+      setCoffeeStoresError(error.message);
+      //set error
+    }
+  }, [latLong]);
 
   const handleOnClickBannerBtn = () => {
     console.log("Dizz banner nuts");
+    handleTrackLocation();
   };
   return (
     <div className={styles.container}>
@@ -33,9 +66,11 @@ export default function Home(props) {
 
       <main className={styles.main}>
         <Banner
-          buttonText="View shops nearby"
+          buttonText={isFindingLocation ? "Locating..." : "View shops nearby"}
           handleOnClick={handleOnClickBannerBtn}
         />
+        {locationErrorMsg && <p>Something went wrong: {locationErrorMsg}</p>}
+        {coffeeStoresError && <p>Something went wrong: {coffeeStoresError}</p>}
         <div className={styles.heroImage}>
           <Image
             src="/static/Illustration - Doodle 3.png"
@@ -43,9 +78,31 @@ export default function Home(props) {
             height={389.03}
           />
         </div>
+        {coffeeStores.length > 0 && (
+          <>
+            <h2 className={styles.heading2}>Stores near me</h2>
+            <div className={styles.cardLayout}>
+              {coffeeStores.map((coffeeStore) => {
+                console.log("coffee :" + coffeeStore.fsq_id);
+                return (
+                  <Card
+                    key={coffeeStore.fsq_id}
+                    name={coffeeStore.name}
+                    imgUrl={
+                      coffeeStore.imgUrl ||
+                      "https://images.unsplash.com/photo-1504753793650-d4a2b783c15e?ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&ixlib=rb-1.2.1&auto=format&fit=crop&w=2000&q=80"
+                    }
+                    href={`/coffee-store/${coffeeStore.fsq_id}`}
+                    className={styles.card}
+                  />
+                );
+              })}
+            </div>
+          </>
+        )}
         {props.coffeeStores.length > 0 && (
           <>
-            <h2 className={styles.heading2}>Nearby stores</h2>
+            <h2 className={styles.heading2}>A few Maputo coffee shops</h2>
             <div className={styles.cardLayout}>
               {props.coffeeStores.map((coffeeStore) => {
                 console.log("coffee :" + coffeeStore.fsq_id);
