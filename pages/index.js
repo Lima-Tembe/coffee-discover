@@ -21,39 +21,42 @@ export async function getStaticProps(context) {
 }
 
 export default function Home(props) {
-  // const [coffeeStores, setCoffeeStores] = useState("");
   const [coffeeStoresError, setCoffeeStoresError] = useState(null);
+  const { handleTrackLocation, locationErrorMsg, isFindingLocation } =
+    useTrackLocation();
+  // const [coffeeStores, setCoffeeStores] = useState("");
   const { dispatch, state } = useContext(StoreContext);
   const { coffeeStores, latLong } = state;
 
-  console.log("props", props.coffeeStores);
-
-  const { handleTrackLocation, locationErrorMsg, isFindingLocation } =
-    useTrackLocation();
-
-  console.log({ latLong, locationErrorMsg });
-
-  useEffect(async () => {
-    try {
+  useEffect(() => {
+    const setCoffeeStoresByLocation = async () => {
       if (latLong) {
-        const fetchedCoffeeStores = await fetchCoffeeStores(latLong, 30);
-        // setCoffeeStores(fetchedCoffeeStores);
-        dispatch({
-          type: ACTION_TYPES.SET_COFFEE_STORES,
-          payload: { coffeeStores: fetchedCoffeeStores },
-        });
-        console.log({ fetchedCoffeeStores });
-        //set coffee stores
+        try {
+          const response = await fetch(
+            `/api/getCoffeeStoresByLocation?latLong=${latLong}&limit=30`
+          );
+
+          const coffeeStores = await response.json();
+
+          // setCoffeeStores(fetchedCoffeeStores);
+          dispatch({
+            type: ACTION_TYPES.SET_COFFEE_STORES,
+            payload: {
+              coffeeStores,
+            },
+          });
+          setCoffeeStoresError("");
+          //set coffee stores
+        } catch (error) {
+          //set error
+          setCoffeeStoresError(error.message);
+        }
       }
-    } catch (error) {
-      console.log({ error });
-      setCoffeeStoresError(error.message);
-      //set error
-    }
-  }, [latLong]);
+    };
+    setCoffeeStoresByLocation();
+  }, [latLong, dispatch]);
 
   const handleOnClickBannerBtn = () => {
-    console.log("Dizz banner nuts");
     handleTrackLocation();
   };
   return (
@@ -80,10 +83,9 @@ export default function Home(props) {
         </div>
         {coffeeStores.length > 0 && (
           <>
-            <h2 className={styles.heading2}>Stores near me</h2>
+            <h2 className={styles.heading2}>Coffee Stores near me</h2>
             <div className={styles.cardLayout}>
               {coffeeStores.map((coffeeStore) => {
-                console.log("coffee :" + coffeeStore.fsq_id);
                 return (
                   <Card
                     key={coffeeStore.fsq_id}
