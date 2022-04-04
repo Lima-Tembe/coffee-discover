@@ -1,0 +1,15 @@
+@host = http://localhost:3000
+
+###
+
+POST {{host}}/api/createCoffeeStore/
+Content-Type: application/json
+
+{
+    "ID": "1",
+    "imgUrl": "https://coffeeimg.com",
+    "voting": 930,
+    "name": "Star Bucks",
+    "neighborhood": "Balas St",
+    "address": "Da Balas Street"
+}
